@@ -57,7 +57,9 @@ def autodiscover(email_addr):
             "server": srv[0].get("hostname"),
             "port": int(srv[0].get("port")),
             # FIXME We might want to "smartly" guess if starttls should be
-            # enabled or not, depending on the port (143 -> starttls, 993 -> no)
+            # enabled or not, depending on the port:
+            # 143 -> starttls
+            # 993 -> no
             "starttls": False,
         }
 

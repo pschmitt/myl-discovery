@@ -8,7 +8,7 @@ Email autoconfig library
 pip install myl-discovery
 ```
 
-## Usage:
+## Usage
 
 ```python
 from myldiscovery import autodiscover
