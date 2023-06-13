@@ -13,7 +13,8 @@ pip install myl-discovery
 ```python
 from myldiscovery import autodiscover
 autodiscover("me@example.com")
-# {'server': 'mail.example.com', 'port': 143, 'starttls': True}
+# {'imap': {'server': 'mail.example.com', 'port': 993, 'starttls': False},
+#  'smtp': {'server': 'mail.example.com', 'port': 587, 'starttls': False}}
 ```
 
 
