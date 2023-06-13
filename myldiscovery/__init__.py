@@ -73,7 +73,7 @@ def autodiscover(email_addr, srv_only=False):
                 # 465 -> starttls
                 # 587 -> no
                 "starttls": False,
-            }
+            },
         }
 
     res = requests.get(autoconfig)
