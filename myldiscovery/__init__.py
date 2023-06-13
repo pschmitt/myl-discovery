@@ -44,23 +44,36 @@ def autodiscover_txt(domain):
     return res.split("=")[1]
 
 
-def autodiscover(email_addr):
+def autodiscover(email_addr, srv_only=False):
     domain = email_addr.split("@")[-1]
     if not domain:
         raise ValueError(f"Invalid email address {email_addr}")
 
-    autoconfig = autodiscover_txt(domain)
+    autoconfig = autodiscover_txt(domain) if not srv_only else None
 
     if not autoconfig:
-        srv = resolve_srv(f"_imaps._tcp.{domain}")
+        imap = resolve_srv(f"_imaps._tcp.{domain}")
+        smtp = resolve_srv(f"_submission._tcp.{domain}")
+
         return {
-            "server": srv[0].get("hostname"),
-            "port": int(srv[0].get("port")),
-            # FIXME We might want to "smartly" guess if starttls should be
-            # enabled or not, depending on the port:
-            # 143 -> starttls
-            # 993 -> no
-            "starttls": False,
+            "imap": {
+                "server": imap[0].get("hostname"),
+                "port": int(imap[0].get("port")),
+                # FIXME We might want to "smartly" guess if starttls should be
+                # enabled or not, depending on the port:
+                # 143 -> starttls
+                # 993 -> no
+                "starttls": False,
+            },
+            "smtp": {
+                "server": smtp[0].get("hostname"),
+                "port": int(smtp[0].get("port")),
+                # FIXME We might want to "smartly" guess if starttls should be
+                # enabled or not, depending on the port:
+                # 465 -> starttls
+                # 587 -> no
+                "starttls": False,
+            }
         }
 
     res = requests.get(autoconfig)
@@ -72,16 +85,24 @@ def autodiscover(email_addr):
         .get("emailProvider", {})
         .get("incomingServer")
     )
-    # smtp = (
-    #     data.get("clientConfig", {})
-    #     .get("emailProvider", {})
-    #     .get("outgoingServer")
-    # )
+    smtp = (
+        data.get("clientConfig", {})
+        .get("emailProvider", {})
+        .get("outgoingServer")
+    )
 
     assert imap is not None
+    assert smtp is not None
 
     return {
-        "server": imap.get("hostname"),
-        "port": int(imap.get("port")),
-        "starttls": imap.get("socketType") == "STARTTLS",
+        "imap": {
+            "server": imap.get("hostname"),
+            "port": int(imap.get("port")),
+            "starttls": imap.get("socketType") == "STARTTLS",
+        },
+        "smtp": {
+            "server": smtp.get("hostname"),
+            "port": int(smtp.get("port")),
+            "starttls": smtp.get("socketType") == "STARTTLS",
+        },
     }
