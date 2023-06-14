@@ -18,9 +18,13 @@ classifiers = [
 dependencies = [
   "dnspython",
   "requests",
+  "rich",
   "xmltodict"
 ]
 version = "0.2.0"
+
+[project.scripts]
+myl-discovery = "myldiscovery:main"
 
 [tool.black]
 line-length = 79
