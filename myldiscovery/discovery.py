@@ -2,10 +2,12 @@ import logging
 import os
 import re
 import shutil
+import socket
 
 import dns.resolver
 import requests
 import xmltodict
+from exchangelib import Account, Credentials
 
 LOGGER = logging.getLogger(__name__)
 
@@ -170,7 +172,61 @@ def autodiscover_srv(domain):
     }
 
 
-def autodiscover(email_addr, srv_only=False):
+def port_check(host, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex((host, int(port)))
+    sock.close()
+    return result == 0
+
+
+def check_email_ports(host):
+    res = {}
+    for port in [25, 465, 587, 993]:
+        res[port] = port_check(host, port)
+    return res
+
+
+def autodiscover_exchange(email, username, password):
+    creds = Credentials(username=username, password=password)
+    account = Account(
+        primary_smtp_address=email, credentials=creds, autodiscover=True
+    )
+    server = account.protocol.server
+
+    portscan = check_email_ports(server)
+    LOGGER.info(f"Port scan results: {portscan}")
+
+    imap_port = imap_starttls = None
+    if portscan.get(993):
+        imap_port = 993
+        imap_starttls = False
+    elif portscan.get(143):
+        imap_port = 143
+        imap_starttls = True
+
+    smtp_port = smtp_starttls = None
+    if portscan.get(465):
+        smtp_port = 465
+        smtp_starttls = False
+    elif portscan.get(587):
+        smtp_port = 587
+        smtp_starttls = True
+
+    return {
+        "imap": {
+            "server": server,
+            "port": imap_port,
+            "starttls": imap_starttls,
+        },
+        "smtp": {
+            "server": server,
+            "port": smtp_port,
+            "starttls": smtp_starttls,
+        },
+    }
+
+
+def autodiscover(email_addr, srv_only=False, username=None, password=None):
     domain = email_addr.split("@")[-1]
     if not domain:
         raise ValueError(f"Invalid email address {email_addr}")
@@ -181,7 +237,14 @@ def autodiscover(email_addr, srv_only=False):
     autoconfig = autodiscover_txt(domain)
 
     if not autoconfig:
-        return autodiscover_srv(domain)
+        try:
+            return autodiscover_srv(domain)
+        except Exception:
+            LOGGER.warning("Failed to autodiscover using SRV records")
+            if username and password:
+                LOGGER.info("Trying autodiscover using Exchange credentials")
+                return autodiscover_exchange(email_addr, username, password)
+            return
 
     res = requests.get(autoconfig)
     res.raise_for_status()

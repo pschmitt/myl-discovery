@@ -1,4 +1,4 @@
-from .discovery import autodiscover, parse_autodiscover
+from .discovery import autodiscover, autodiscover_exchange
 from .main import main
 
-__all__ = ["main", "autodiscover", "parse_autodiscover"]
+__all__ = ["main", "autodiscover", "autodiscover_exchange"]

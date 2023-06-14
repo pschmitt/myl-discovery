@@ -18,6 +18,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-j", "--json", action="store_true", default=False)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
+    parser.add_argument(
+        "-u", "--username", required=False, help="Username (Exchange only)"
+    )
+    parser.add_argument(
+        "-p", "--password", required=False, help="Password (Exchange only)"
+    )
     parser.add_argument("EMAIL")
     return parser.parse_args()
 
@@ -33,7 +39,9 @@ def main():
     LOGGER.debug(args)
 
     try:
-        res = autodiscover(args.EMAIL)
+        res = autodiscover(
+            args.EMAIL, username=args.username, password=args.password
+        )
         if args.json:
             print_json(data=res)
         else:
