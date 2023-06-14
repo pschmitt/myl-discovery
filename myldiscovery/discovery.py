@@ -70,42 +70,9 @@ def autodiscover_txt(domain):
     return res.split("=")[1]
 
 
-def autodiscover(email_addr, srv_only=False):
-    domain = email_addr.split("@")[-1]
-    if not domain:
-        raise ValueError(f"Invalid email address {email_addr}")
+def parse_autoconfig(content):
+    data = xmltodict.parse(content)
 
-    autoconfig = autodiscover_txt(domain) if not srv_only else None
-
-    if not autoconfig:
-        imap = resolve_srv(f"_imaps._tcp.{domain}")
-        smtp = resolve_srv(f"_submission._tcp.{domain}")
-
-        return {
-            "imap": {
-                "server": imap[0].get("hostname"),
-                "port": int(imap[0].get("port")),
-                # FIXME We might want to "smartly" guess if starttls should be
-                # enabled or not, depending on the port:
-                # 143 -> starttls
-                # 993 -> no
-                "starttls": False,
-            },
-            "smtp": {
-                "server": smtp[0].get("hostname"),
-                "port": int(smtp[0].get("port")),
-                # FIXME We might want to "smartly" guess if starttls should be
-                # enabled or not, depending on the port:
-                # 465 -> starttls
-                # 587 -> no
-                "starttls": False,
-            },
-        }
-
-    res = requests.get(autoconfig)
-    res.raise_for_status()
-
-    data = xmltodict.parse(res.text)
     imap = (
         data.get("clientConfig", {})
         .get("emailProvider", {})
@@ -116,6 +83,9 @@ def autodiscover(email_addr, srv_only=False):
         .get("emailProvider", {})
         .get("outgoingServer")
     )
+
+    LOGGER.debug(f"imap settings: {imap}")
+    LOGGER.debug(f"smtp settings: {smtp}")
 
     assert imap is not None
     assert smtp is not None
@@ -132,3 +102,92 @@ def autodiscover(email_addr, srv_only=False):
             "starttls": smtp.get("socketType") == "STARTTLS",
         },
     }
+
+
+def parse_autodiscover(content):
+    data = xmltodict.parse(content)
+    acc = data.get("Autodiscover", {}).get("Response", {}).get("Account", [])
+    imap = next(
+        (
+            item.get("Protocol", {})
+            for item in acc
+            if item.get("Protocol", {}).get("Type", "").lower() == "imap"
+        ),
+        None,
+    )
+    smtp = next(
+        (
+            item.get("Protocol", {})
+            for item in acc
+            if item.get("Protocol", {}).get("Type", "").lower() == "smtp"
+        ),
+        None,
+    )
+
+    LOGGER.debug(f"imap settings: {imap}")
+    LOGGER.debug(f"smtp settings: {smtp}")
+
+    assert imap is not None
+    assert smtp is not None
+
+    return {
+        "imap": {
+            "server": imap.get("Server"),
+            "port": int(imap.get("Port")),
+            "starttls": imap.get("Encryption", "").lower() == "tls",
+        },
+        "smtp": {
+            "server": smtp.get("Server"),
+            "port": int(smtp.get("Port")),
+            "starttls": smtp.get("Encryption", "").lower() == "tls",
+        },
+    }
+
+
+def autodiscover_srv(domain):
+    imap = resolve_srv(f"_imaps._tcp.{domain}")
+    smtp = resolve_srv(f"_submission._tcp.{domain}")
+
+    return {
+        "imap": {
+            "server": imap[0].get("hostname"),
+            "port": int(imap[0].get("port")),
+            # FIXME We might want to "smartly" guess if starttls should be
+            # enabled or not, depending on the port:
+            # 143 -> starttls
+            # 993 -> no
+            "starttls": False,
+        },
+        "smtp": {
+            "server": smtp[0].get("hostname"),
+            "port": int(smtp[0].get("port")),
+            # FIXME We might want to "smartly" guess if starttls should be
+            # enabled or not, depending on the port:
+            # 465 -> starttls
+            # 587 -> no
+            "starttls": False,
+        },
+    }
+
+
+def autodiscover(email_addr, srv_only=False):
+    domain = email_addr.split("@")[-1]
+    if not domain:
+        raise ValueError(f"Invalid email address {email_addr}")
+
+    if srv_only:
+        return autodiscover_srv(domain)
+
+    autoconfig = autodiscover_txt(domain)
+
+    if not autoconfig:
+        return autodiscover_srv(domain)
+
+    res = requests.get(autoconfig)
+    res.raise_for_status()
+
+    try:
+        return parse_autoconfig(res.text)
+    except Exception:
+        LOGGER.warning("Failed to parse autoconfig, trying autodiscover")
+        return parse_autodiscover(res.text)
