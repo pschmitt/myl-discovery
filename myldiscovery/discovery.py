@@ -186,7 +186,9 @@ def check_email_ports(host):
     return res
 
 
-def autodiscover_exchange(email, username, password):
+def autodiscover_exchange(email, password, username=None):
+    if not username:
+        username = email
     creds = Credentials(username=username, password=password)
     account = Account(
         primary_smtp_address=email, credentials=creds, autodiscover=True
@@ -241,7 +243,7 @@ def autodiscover(email_addr, srv_only=False, username=None, password=None):
             return autodiscover_srv(domain)
         except Exception:
             LOGGER.warning("Failed to autodiscover using SRV records")
-            if username and password:
+            if password:
                 LOGGER.info("Trying autodiscover using Exchange credentials")
                 return autodiscover_exchange(email_addr, username, password)
             return
