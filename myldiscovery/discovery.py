@@ -1,5 +1,7 @@
 import logging
+import os
 import re
+import shutil
 
 import dns.resolver
 import requests
@@ -8,9 +10,33 @@ import xmltodict
 LOGGER = logging.getLogger(__name__)
 
 
+def is_termux():
+    if os.getenv("TERMUX_VERSION"):
+        return True
+
+    return shutil.which("termux-info") is not None
+
+
+def resolve(*args, **kwargs):
+    termux = is_termux()
+    dns.resolver.default_resolver = dns.resolver.Resolver(
+        # Do not attempt to read /etc/resolv.conf on Termux
+        configure=not termux
+    )
+    if termux:
+        # Default to Google DNS on Termux
+        dns.resolver.default_resolver.nameservers = [
+            "8.8.8.8",
+            "2001:4860:4860::8888",
+            "8.8.4.4",
+            "2001:4860:4860::8844",
+        ]
+    return dns.resolver.resolve(*args, **kwargs)
+
+
 def resolve_txt(domain, criteria="^mailconf="):
     regex = re.compile(criteria)
-    answers = dns.resolver.resolve(domain, "TXT")
+    answers = resolve(domain, "TXT")
     for rdata in answers:
         for txt_string in rdata.strings:
             txt_record = txt_string.decode("utf-8")
@@ -19,7 +45,7 @@ def resolve_txt(domain, criteria="^mailconf="):
 
 
 def resolve_srv(domain):
-    answers = dns.resolver.resolve(domain, "SRV")
+    answers = resolve(domain, "SRV")
     data = []
     for rdata in answers:
         entry = {
