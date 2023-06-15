@@ -1,127 +1,89 @@
-# myl-discovery
+# 📩 myl-discovery
 
-Email autoconfig library
+myl-discovery is a Python library designed to detect email settings of a given 
+email address or domain.
 
-## Installation
+## 📥 Installation
 
-```shell
+To install myl-discovery, run the following command:
+
+```bash
 pip install myl-discovery
 ```
 
-## Usage
+## 📖 Usage
+
+After installing the package, you can use the `autodiscover` function to 
+discover the email settings for a domain. Here's an example:
 
 ```python
 from myldiscovery import autodiscover
-autodiscover("me@example.com")
-# {'imap': {'server': 'mail.example.com', 'port': 993, 'starttls': False},
-#  'smtp': {'server': 'mail.example.com', 'port': 587, 'starttls': False}}
+
+settings = autodiscover("yourdomain.com")  # or me@yourdomain.com
+print(settings)
+
+# For Exchange autodiscovery you need to provide credentials
+settings = autodiscover(
+    'me@yourdomain.com', 
+    username='WORKGROUP\me', 
+    password='mypassword1234'
+)
 ```
 
+## 📄 Output
 
-## Development
+The `autodiscover` function returns a dictionary with the detected settings. 
+The dictionary contains two keys, `imap` and `smtp`, each containing a 
+dictionary with the keys `server`, `port`, and `starttls`. 
 
-### Autodiscovery
+Here's an example:
 
-#### autoconfig
-
-```shell
-curl -L https://mail.example.com/mail/config-v1.1.xml
+```json
+{
+  "imap": {
+    "server": "imap.yourdomain.com",
+    "port": 993,
+    "starttls": false
+  },
+  "smtp": {
+    "server": "smtp.yourdomain.com",
+    "port": 587,
+    "starttls": true
+  }
+}
 ```
 
-Response:
+## 🧩 Autodiscover Functions
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<clientConfig version="1.1">
-	<emailProvider id="example.com">
-	    <domain>example.com</domain>
+myl-discovery exposes several functions to discover email settings:
 
-	    <displayName>example.com Email</displayName>
-	    <displayShortName>%EMAILLOCALPART%</displayShortName>
-	    <incomingServer type="imap">
-			<hostname>mail.example.com</hostname>
-			<port>143</port>
-			<socketType>STARTTLS</socketType>
-			<authentication>password-cleartext</authentication>
-			<username>%EMAILADDRESS%</username>
-		</incomingServer>
-	    <outgoingServer type="smtp">
-			<hostname>mail.example.com</hostname>
-			<port>587</port>
-			<socketType>STARTTLS</socketType>
-			<authentication>password-cleartext</authentication>
-			<username>%EMAILADDRESS%</username>
-	    </outgoingServer>
-		<documentation url="https://autodiscover.example.com">
-			<descr lang="en">Generic settings page</descr>
-			<descr lang="fr">Paramètres généraux</descr>
-			<descr lang="es">Configuraciones genéricas</descr>
-			<descr lang="de">Allgemeine Beschreibung der Einstellungen</descr>
-			<descr lang="ru">Страница общих настроек</descr>
-		</documentation>
-	</emailProvider>
-</clientConfig>
-```
+- `autodiscover`: This function wraps the below function do automatically detect
+the right settings. (See Autodiscover strategy for more information)
+- `autodiscover_srv`: This function attempts to resolve SRV records for 
+the domain to discover IMAP and SMTP servers.
+- `autodiscover_exchange`: This function attempts to use the Exchange 
+Autodiscover service to discover email settings. It requires a username and 
+password.
+- `autodiscover_autoconfig`: This function attempts to fetch and parse an 
+autoconfig XML file from a URL specified in the domain's TXT records.
+- `autodiscover_port_scan`: This function performs a port scan on the domain 
+to discover open IMAP and SMTP ports.
 
-### autodiscover
+## 🧠 Autodiscover Strategy
 
-```shell
-curl -L mail.example.com/autodiscover/autodiscover.xml
-```
+The `autodiscover` function uses the following strategy to discover 
+email settings:
 
-Response:
+1. It first attempts to use `autodiscover_autoconfig` to discover settings 
+from an autoconfig/autodiscover URL specified in the domain's TXT records.
+2. If that fails, it attempts to use `autodiscover_srv` to discover settings 
+from the domain's SRV records.
+3. If that fails and a password is provided, it attempts to use 
+`autodiscover_exchange` to discover settings using the 
+Exchange Autodiscover service (only if credentials were provided)
+4. If all else fails, it uses `autodiscover_port_scan` to discover settings by 
+performing a port scan on the domain.
 
-```xml
-<?xml version="1.0" encoding="utf-8" ?>
-<Autodiscover xmlns="http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006">
-        <Response xmlns="http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006">
-                <User>
-                        <DisplayName>example.com Email</DisplayName>
-                </User>
-                <Account>
-                        <AccountType>email</AccountType>
-                        <Action>settings</Action>
-                        <ServiceHome>https://autodiscover.example.com</ServiceHome>
+## 📜 License
 
-                        <Protocol>
-                                <Type>IMAP</Type>
-                                <TTL>1</TTL>
-
-                                <Server>mail.example.com</Server>
-                                <Port>143</Port>
-
-                                <LoginName></LoginName>
-
-                                <DomainRequired>on</DomainRequired>
-                                <DomainName>example.com</DomainName>
-
-                                <SPA>off</SPA>
-                                <Encryption>TLS</Encryption>
-                                <AuthRequired>on</AuthRequired>
-                        </Protocol>
-                </Account>
-                <Account>
-                        <AccountType>email</AccountType>
-                        <Action>settings</Action>
-                        <ServiceHome>https://autodiscover.example.com</ServiceHome>
-
-                        <Protocol>
-                                <Type>SMTP</Type>
-                                <TTL>1</TTL>
-
-                                <Server>mail.example.com</Server>
-                                <Port>587</Port>
-
-                                <LoginName></LoginName>
-
-                                <DomainRequired>on</DomainRequired>
-                                <DomainName>example.com</DomainName>
-
-                                <SPA>off</SPA>
-                                <Encryption>TLS</Encryption>
-                                <AuthRequired>on</AuthRequired>
-                        </Protocol>
-                </Account></Response>
-</Autodiscover>
-```
-
+myl-discovery is licensed under the [GNU General Public License v3.0](LICENSE).
