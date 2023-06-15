@@ -55,7 +55,7 @@ def main():
             table.add_column("Service", style="red")
             table.add_column("Host", style="blue")
             table.add_column("Port", style="green")
-            table.add_column("TLS", style="yellow")
+            table.add_column("Encryption", style="yellow")
             for svc in ["imap", "smtp"]:
                 table.add_row(
                     svc,

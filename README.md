@@ -119,7 +119,7 @@ Example:
 
 ```
 $ myl-discovery user01@gmail.com
- Service          Host                           Port       TLS
+ Service          Host                           Port       Encryption
  imap             imap.gmail.com                 993        tls
  smtp             smtp.gmail.com                 587        tls
 ```
