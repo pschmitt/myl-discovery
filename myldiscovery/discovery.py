@@ -66,10 +66,13 @@ def resolve_srv(domain):
 
 
 def autodiscover_txt(domain):
-    res = resolve_txt(domain, criteria="^mailconf=")
-    if not res:
-        return
-    return res.split("=")[1]
+    try:
+        res = resolve_txt(domain, criteria="^mailconf=")
+        if not res:
+            return
+        return res.split("=")[1]
+    except Exception:
+        LOGGER.warning("Failed to resolve TXT record")
 
 
 def parse_autoconfig(content):
@@ -147,29 +150,35 @@ def parse_autodiscover(content):
 
 
 def autodiscover_srv(domain):
-    imap = resolve_srv(f"_imaps._tcp.{domain}")
-    smtp = resolve_srv(f"_submission._tcp.{domain}")
+    try:
+        imap = resolve_srv(f"_imaps._tcp.{domain}")
+        smtp = resolve_srv(f"_submission._tcp.{domain}")
 
-    return {
-        "imap": {
-            "server": imap[0].get("hostname"),
-            "port": int(imap[0].get("port")),
-            # FIXME We might want to "smartly" guess if starttls should be
-            # enabled or not, depending on the port:
-            # 143 -> starttls
-            # 993 -> no
-            "starttls": False,
-        },
-        "smtp": {
-            "server": smtp[0].get("hostname"),
-            "port": int(smtp[0].get("port")),
-            # FIXME We might want to "smartly" guess if starttls should be
-            # enabled or not, depending on the port:
-            # 465 -> starttls
-            # 587 -> no
-            "starttls": False,
-        },
-    }
+        assert imap is not None
+        assert smtp is not None
+
+        return {
+            "imap": {
+                "server": imap[0].get("hostname"),
+                "port": int(imap[0].get("port")),
+                # FIXME We might want to "smartly" guess if starttls should be
+                # enabled or not, depending on the port:
+                # 143 -> starttls
+                # 993 -> no
+                "starttls": False,
+            },
+            "smtp": {
+                "server": smtp[0].get("hostname"),
+                "port": int(smtp[0].get("port")),
+                # FIXME We might want to "smartly" guess if starttls should be
+                # enabled or not, depending on the port:
+                # 465 -> starttls
+                # 587 -> no
+                "starttls": False,
+            },
+        }
+    except Exception as e:
+        LOGGER.warning(f"Failed to resolve SRV records: {e}")
 
 
 def port_check(host, port):
@@ -187,14 +196,19 @@ def check_email_ports(host):
 
 
 def autodiscover_exchange(email, password, username=None):
-    if not username:
-        username = email
-    creds = Credentials(username=username, password=password)
-    account = Account(
-        primary_smtp_address=email, credentials=creds, autodiscover=True
-    )
-    server = account.protocol.server
+    try:
+        if not username:
+            username = email
+        creds = Credentials(username=username, password=password)
+        account = Account(
+            primary_smtp_address=email, credentials=creds, autodiscover=True
+        )
+        return autodiscover_port_scan(account.protocol.server)
+    except Exception as e:
+        LOGGER.warning(f"Failed to autodiscover Exchange: {e}")
 
+
+def autodiscover_port_scan(server):
     portscan = check_email_ports(server)
     LOGGER.info(f"Port scan results: {portscan}")
 
@@ -228,27 +242,12 @@ def autodiscover_exchange(email, password, username=None):
     }
 
 
-def autodiscover(email_addr, srv_only=False, username=None, password=None):
-    domain = email_addr.split("@")[-1]
-    if not domain:
-        raise ValueError(f"Invalid email address {email_addr}")
-
-    if srv_only:
-        return autodiscover_srv(domain)
-
+def autodiscover_autoconfig(domain):
     autoconfig = autodiscover_txt(domain)
 
     if not autoconfig:
-        try:
-            return autodiscover_srv(domain)
-        except Exception:
-            LOGGER.warning("Failed to autodiscover using SRV records")
-            if password:
-                LOGGER.info("Trying autodiscover using Exchange credentials")
-                return autodiscover_exchange(
-                    email=email_addr, username=username, password=password
-                )
-            return
+        LOGGER.warning("Failed to autodiscover using TXT records")
+        return
 
     res = requests.get(autoconfig)
     res.raise_for_status()
@@ -258,3 +257,25 @@ def autodiscover(email_addr, srv_only=False, username=None, password=None):
     except Exception:
         LOGGER.warning("Failed to parse autoconfig, trying autodiscover")
         return parse_autodiscover(res.text)
+
+
+def autodiscover(email_addr, username=None, password=None):
+    domain = email_addr.split("@")[-1]
+    if not domain:
+        raise ValueError(f"Invalid email address {email_addr}")
+
+    res = autodiscover_autoconfig(domain)
+
+    if not res:
+        res = autodiscover_srv(domain)
+
+    if not res and password:
+        res = autodiscover_srv(domain)
+        autodiscover_exchange(
+            email=email_addr, username=username, password=password
+        )
+
+    if not res:
+        res = autodiscover_port_scan(domain)
+
+    return res
