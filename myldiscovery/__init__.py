@@ -1,6 +1,11 @@
-from .discovery import (autodiscover, autodiscover_autoconfig,
-                        autodiscover_exchange, autodiscover_port_scan,
-                        autodiscover_srv, autodiscover_txt)
+from .discovery import (
+    autodiscover,
+    autodiscover_autoconfig,
+    autodiscover_exchange,
+    autodiscover_port_scan,
+    autodiscover_srv,
+    autodiscover_txt,
+)
 from .main import main
 
 __all__ = [
