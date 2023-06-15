@@ -245,7 +245,9 @@ def autodiscover(email_addr, srv_only=False, username=None, password=None):
             LOGGER.warning("Failed to autodiscover using SRV records")
             if password:
                 LOGGER.info("Trying autodiscover using Exchange credentials")
-                return autodiscover_exchange(email_addr, username, password)
+                return autodiscover_exchange(
+                    email=email_addr, username=username, password=password
+                )
             return
 
     res = requests.get(autoconfig)
