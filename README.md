@@ -115,6 +115,15 @@ options:
                         Password (Exchange only)
 ```
 
+Example:
+
+```
+$ myl-discovery user01@gmail.com
+ Service          Host                           Port       TLS
+ imap             imap.gmail.com                 993        tls
+ smtp             smtp.gmail.com                 587        tls
+```
+
 ## 📜 License
 
 myl-discovery is licensed under the [GNU General Public License v3.0](LICENSE).
