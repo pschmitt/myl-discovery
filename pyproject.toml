@@ -18,7 +18,7 @@ classifiers = [
 dependencies = [
   "dnspython == 2.6.1",
   "exchangelib == 5.4.0",
-  "requests == 2.31.0",
+  "requests == 2.32.1",
   "rich == 13.7.1",
   "xmltodict == 0.13.0"
 ]
