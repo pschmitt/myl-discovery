@@ -19,7 +19,7 @@ dependencies = [
   "dnspython == 2.6.1",
   "exchangelib == 5.4.3",
   "requests == 2.32.3",
-  "rich == 13.8.1",
+  "rich == 13.9.1",
   "xmltodict == 0.13.0"
 ]
 version = "0.5.7"
