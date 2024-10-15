@@ -16,11 +16,11 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "dnspython == 2.7.0",
-  "exchangelib == 5.4.3",
-  "requests == 2.32.3",
-  "rich == 13.9.2",
-  "xmltodict == 0.14.1"
+  "dnspython >= 2.7.0, < 3.0.0",
+  "exchangelib >= 5.0.0, < 6.0.0",
+  "requests >= 2.0.0, < 3.0.0",
+  "rich >= 13.0.0, < 14.0.0",
+  "xmltodict >= 0.14.1, < 1.0.0"
 ]
 version = "0.5.7"
 
