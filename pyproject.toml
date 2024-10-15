@@ -24,6 +24,12 @@ dependencies = [
 ]
 version = "0.5.9"
 
+[project.urls]
+homepage = "https://github.com/pschmitt/myl-discovery"
+documentation = "https://github.com/pschmitt/myl-discovery/blob/head/readme.md"
+repository = "https://github.com/pschmitt/myl-discovery"
+issues = "https://github.com/pschmitt/myl-discovery/issues"
+
 [project.scripts]
 myl-discovery = "myldiscovery:main"
 
