@@ -22,7 +22,7 @@ dependencies = [
   "rich >= 13.0.0, < 14.0.0",
   "xmltodict >= 0.14.1, < 1.0.0"
 ]
-version = "0.5.7"
+version = "0.5.8"
 
 [project.scripts]
 myl-discovery = "myldiscovery:main"
