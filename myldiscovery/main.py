@@ -60,7 +60,7 @@ def main():
                 table.add_row(
                     svc,
                     res[svc]["server"],
-                    str(res[svc]["port"]),
+                    str(res[svc].get("port", "N/A")),
                     "starttls" if res[svc]["starttls"] else "tls",
                 )
             console.print(table)
