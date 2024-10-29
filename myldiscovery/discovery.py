@@ -75,6 +75,7 @@ def autodiscover_txt(domain):
         LOGGER.warning("Failed to resolve TXT record")
 
 
+# https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat
 def parse_autoconfig(content):
     data = xmltodict.parse(content)
 
@@ -100,11 +101,13 @@ def parse_autoconfig(content):
             "server": imap.get("hostname"),
             "port": int(imap.get("port")),
             "starttls": imap.get("socketType") == "STARTTLS",
+            "ssl": imap.get("socketType") == "SSL",
         },
         "smtp": {
             "server": smtp.get("hostname"),
             "port": int(smtp.get("port")),
             "starttls": smtp.get("socketType") == "STARTTLS",
+            "ssl": smtp.get("socketType") == "SSL",
         },
     }
 
@@ -140,19 +143,41 @@ def parse_autodiscover(content):
             "server": imap.get("Server"),
             "port": int(imap.get("Port")),
             "starttls": imap.get("Encryption", "").lower() == "tls",
+            # FIXME Is that really the expected value for SSL?
+            "ssl": imap.get("Encryption", "").lower() == "ssl",
         },
         "smtp": {
             "server": smtp.get("Server"),
             "port": int(smtp.get("Port")),
             "starttls": smtp.get("Encryption", "").lower() == "tls",
+            # FIXME Is that really the expected value for SSL?
+            "ssl": smtp.get("Encryption", "").lower() == "ssl",
         },
     }
 
 
+# https://datatracker.ietf.org/doc/html/rfc6186
 def autodiscover_srv(domain):
     try:
+        # Start by looking for IMAPS and SUBMISSIONS (ie SSL)
+        imap_ssl = True
+        smtp_ssl = True
         imap = resolve_srv(f"_imaps._tcp.{domain}")
-        smtp = resolve_srv(f"_submission._tcp.{domain}")
+        smtp = resolve_srv(f"_submissions._tcp.{domain}")
+
+        if not imap:
+            LOGGER.warning("No imaps SRV found, trying imap (starttls)")
+            imap_ssl = False
+            imap = resolve_srv(f"_imap._tcp.{domain}")
+        if not smtp:
+            LOGGER.warning(
+                "No submissions SRV found, trying submission (starttls)"
+            )
+            imap_ssl = False
+            smtp = resolve_srv(f"_submission._tcp.{domain}")
+
+        imap_starttls = not imap_ssl
+        smtp_starttls = not smtp_ssl
 
         assert imap is not None
         assert smtp is not None
@@ -161,31 +186,36 @@ def autodiscover_srv(domain):
             "imap": {
                 "server": imap[0].get("hostname"),
                 "port": int(imap[0].get("port")),
-                # FIXME We might want to "smartly" guess if starttls should be
-                # enabled or not, depending on the port:
-                # 143 -> starttls
-                # 993 -> no
-                "starttls": False,
+                "starttls": imap_starttls,
+                "ssl": imap_ssl,
             },
             "smtp": {
                 "server": smtp[0].get("hostname"),
                 "port": int(smtp[0].get("port")),
-                # FIXME We might want to "smartly" guess if starttls should be
-                # enabled or not, depending on the port:
-                # 465 -> starttls
-                # 587 -> no
-                "starttls": False,
+                "starttls": smtp_starttls,
+                "ssl": smtp_ssl,
             },
         }
     except Exception as e:
         LOGGER.warning(f"Failed to resolve SRV records: {e}")
 
 
-def port_check(host, port):
+def port_check(host, port, timeout=5.0):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = sock.connect_ex((host, int(port)))
-    sock.close()
-    return result == 0
+    sock.settimeout(float(timeout))
+    try:
+        result = sock.connect_ex((host, port))
+        return result == 0
+    except socket.timeout:
+        LOGGER.warning(
+            f"Connection to {host}:{port} timed out after {timeout} seconds."
+        )
+        return False
+    except socket.error as e:
+        LOGGER.warning(f"Socket error occurred: {e}")
+        return False
+    finally:
+        sock.close()
 
 
 def check_email_ports(host):
@@ -212,32 +242,40 @@ def autodiscover_port_scan(server):
     portscan = check_email_ports(server)
     LOGGER.info(f"Port scan results: {portscan}")
 
-    imap_port = imap_starttls = None
+    imap_port = imap_starttls = imap_ssl = None
     if portscan.get(993):
         imap_port = 993
-        imap_starttls = False
+        imap_ssl = True
     elif portscan.get(143):
         imap_port = 143
-        imap_starttls = True
+        imap_ssl = False
 
-    smtp_port = smtp_starttls = None
+    smtp_port = smtp_starttls = smtp_ssl = None
     if portscan.get(465):
         smtp_port = 465
-        smtp_starttls = False
+        smtp_ssl = True
     elif portscan.get(587):
         smtp_port = 587
-        smtp_starttls = True
+        smtp_ssl = False
+    elif portscan.get(25):
+        smtp_port = 25
+        smtp_ssl = False
+
+    imap_starttls = not imap_ssl if imap_ssl is not None else None
+    smtp_starttls = not smtp_ssl if smtp_ssl is not None else None
 
     return {
         "imap": {
             "server": server,
             "port": imap_port,
             "starttls": imap_starttls,
+            "ssl": imap_ssl,
         },
         "smtp": {
             "server": server,
             "port": smtp_port,
             "starttls": smtp_starttls,
+            "ssl": smtp_ssl,
         },
     }
 
