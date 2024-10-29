@@ -263,6 +263,22 @@ def autodiscover(email_addr, username=None, password=None):
     domain = email_addr.split("@")[-1]
     if not domain:
         raise ValueError(f"Invalid email address {email_addr}")
+    if domain == "gmail.com":
+        LOGGER.debug("Gmail detected, skipping autodiscover")
+        return {
+            "imap": {
+                "server": "imap.gmail.com",
+                "port": 993,
+                "starttls": False,
+                "ssl": True,
+            },
+            "smtp": {
+                "server": "smtp.gmail.com",
+                "port": 465,
+                "starttls": False,
+                "ssl": True,
+            },
+        }
 
     res = autodiscover_autoconfig(domain)
 
