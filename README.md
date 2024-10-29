@@ -43,12 +43,14 @@ Here's an example:
   "imap": {
     "server": "imap.yourdomain.com",
     "port": 993,
-    "starttls": false
+    "starttls": false,
+    "ssl": false
   },
   "smtp": {
     "server": "smtp.yourdomain.com",
     "port": 587,
-    "starttls": true
+    "starttls": true,
+    "ssl": false
   }
 }
 ```
@@ -127,3 +129,8 @@ $ myl-discovery user01@gmail.com
 ## 📜 License
 
 myl-discovery is licensed under the [GNU General Public License v3.0](LICENSE).
+
+## 📑 Upstream docs
+
+- https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat
+- https://datatracker.ietf.org/doc/html/rfc6186
