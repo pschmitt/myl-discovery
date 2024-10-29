@@ -134,3 +134,4 @@ myl-discovery is licensed under the [GNU General Public License v3.0](LICENSE).
 
 - https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat
 - https://datatracker.ietf.org/doc/html/rfc6186
+- https://developers.google.com/gmail/imap/imap-smtp

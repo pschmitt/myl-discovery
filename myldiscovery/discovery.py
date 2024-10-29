@@ -303,6 +303,7 @@ def autodiscover(email_addr, username=None, password=None):
         raise ValueError(f"Invalid email address {email_addr}")
     if domain == "gmail.com":
         LOGGER.debug("Gmail detected, skipping autodiscover")
+        # https://developers.google.com/gmail/imap/imap-smtp
         return {
             "imap": {
                 "server": "imap.gmail.com",
