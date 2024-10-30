@@ -24,6 +24,9 @@ def parse_args():
     parser.add_argument(
         "-p", "--password", required=False, help="Password (Exchange only)"
     )
+    parser.add_argument(
+        "--insecure", required=False, action="store_true", default=False
+    )
     parser.add_argument("EMAIL")
     return parser.parse_args()
 
@@ -40,7 +43,10 @@ def main():
 
     try:
         res = autodiscover(
-            args.EMAIL, username=args.username, password=args.password
+            args.EMAIL,
+            username=args.username,
+            password=args.password,
+            insecure=args.insecure,
         )
         if args.json:
             print_json(data=res)

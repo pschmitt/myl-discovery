@@ -280,14 +280,14 @@ def autodiscover_port_scan(server):
     }
 
 
-def autodiscover_autoconfig(domain):
+def autodiscover_autoconfig(domain, insecure=False):
     autoconfig = autodiscover_txt(domain)
 
     if not autoconfig:
         LOGGER.warning("Failed to autodiscover using TXT records")
         return
 
-    res = requests.get(autoconfig)
+    res = requests.get(autoconfig, verify=not insecure)
     res.raise_for_status()
 
     try:
@@ -297,10 +297,12 @@ def autodiscover_autoconfig(domain):
         return parse_autodiscover(res.text)
 
 
-def autodiscover(email_addr, username=None, password=None):
+def autodiscover(email_addr, username=None, password=None, insecure=False):
     domain = email_addr.split("@")[-1]
+
     if not domain:
         raise ValueError(f"Invalid email address {email_addr}")
+
     if domain == "gmail.com":
         LOGGER.debug("Gmail detected, skipping autodiscover")
         # https://developers.google.com/gmail/imap/imap-smtp
@@ -319,7 +321,7 @@ def autodiscover(email_addr, username=None, password=None):
             },
         }
 
-    res = autodiscover_autoconfig(domain)
+    res = autodiscover_autoconfig(domain, insecure=insecure)
 
     if not res:
         res = autodiscover_srv(domain)
