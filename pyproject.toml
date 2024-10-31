@@ -22,7 +22,11 @@ dependencies = [
   "rich >= 13.0.0, < 14.0.0",
   "xmltodict >= 0.13.0, < 1.0.0"
 ]
-version = "0.6.1"
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+write_to = "version.txt"
+version_file = "_version.py"
 
 [project.urls]
 homepage = "https://github.com/pschmitt/myl-discovery"
