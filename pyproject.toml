@@ -28,6 +28,9 @@ dynamic = ["version"]
 write_to = "version.txt"
 version_file = "_version.py"
 
+[tool.setuptools]
+packages = ["myldiscovery"]
+
 [project.urls]
 homepage = "https://github.com/pschmitt/myl-discovery"
 documentation = "https://github.com/pschmitt/myl-discovery/blob/head/readme.md"
