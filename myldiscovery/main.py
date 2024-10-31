@@ -3,6 +3,7 @@
 
 import argparse
 import logging
+from importlib.metadata import PackageNotFoundError, version
 
 from rich import print_json
 from rich.console import Console
@@ -11,11 +12,22 @@ from rich.table import Table
 
 from myldiscovery import autodiscover
 
+try:
+    __version__ = version("myl")
+except PackageNotFoundError:
+    pass
+
 LOGGER = logging.getLogger(__name__)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     parser.add_argument("-j", "--json", action="store_true", default=False)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument(
