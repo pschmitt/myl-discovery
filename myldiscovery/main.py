@@ -13,7 +13,7 @@ from rich.table import Table
 from myldiscovery import autodiscover
 
 try:
-    __version__ = version("myl")
+    __version__ = version("myl-discovery")
 except PackageNotFoundError:
     pass
 
