@@ -20,7 +20,7 @@ dependencies = [
   "exchangelib >= 5.0.0, < 6.0.0",
   "requests >= 2.0.0, < 3.0.0",
   "rich >= 13.0.0, < 15.0.0",
-  "xmltodict >= 0.13.0, < 1.0.0"
+  "xmltodict >= 0.13.0, < 2.0.0"
 ]
 dynamic = ["version"]
 
