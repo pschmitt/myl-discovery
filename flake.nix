@@ -20,7 +20,7 @@
 
         mylDiscovery = pkgs.python3Packages.buildPythonApplication {
           pname = "myl-discovery";
-          version = builtins.readFile ./version.txt;
+          version = builtins.readFile ./myl-discovery-version.txt;
           pyproject = true;
 
           src = ./.;
