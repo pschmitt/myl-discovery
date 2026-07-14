@@ -32,6 +32,9 @@ local_scheme = "no-local-version"
 [tool.setuptools]
 packages = ["myldiscovery"]
 
+[tool.setuptools.exclude-package-data]
+"*" = ["version.txt"]
+
 [project.urls]
 homepage = "https://github.com/pschmitt/myl-discovery"
 documentation = "https://github.com/pschmitt/myl-discovery/blob/head/readme.md"
